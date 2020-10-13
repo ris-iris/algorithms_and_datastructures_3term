@@ -1,46 +1,40 @@
 #include <iostream>
 #include <vector>
 
-std::vector<int> z(const std::string& s, int patLength){
-  std::vector<int> z(patLength, 0);
+std::vector<int> z(const std::string &s, int pat_length) {
+  std::vector<int> z(pat_length, 0);
   std::vector<int> ans(0);
-  int textLength = s.length();
-  int l = 0;
-  int r = 0;
-  for (int i = 0; i < patLength; ++i){
-    if(i <= r)
-      z[i] = std::min(r - i + 1, z[i-l]);
-    while (i + z[i] < patLength && s[z[i]] == s[z[i] + i])
-      ++z[i];
-    if(i + z[i] - 1 > r){
-      l = i;
-      r = i + z[i] - 1;
+  int text_length = s.length();
+  int left = 0;
+  int right = 0;
+
+  int next_z = 0;
+  for (int i = 0; i < text_length; ++i) {
+    next_z = 0;
+    if (i <= right)
+      next_z = std::min(right - i + 1, z[i - left]);
+    while (i + next_z < ((i < pat_length)?pat_length:text_length) && s[next_z] == s[next_z + i])
+      ++next_z;
+    if (i + next_z - 1 > right) {
+      left = i;
+      right = i + next_z - 1;
     }
-  }
-  int nextZ = 0;
-  for (int i = patLength; i < textLength; ++i) {
-    nextZ = 0;
-    if(i <= r)
-      nextZ = std::min(r - i + 1, z[i-l]);
-    while (i + nextZ < textLength && s[nextZ] == s[nextZ + i])
-      ++nextZ;
-    if(i + nextZ - 1 > r){
-      l = i;
-      r = i + nextZ - 1;
-    }
-    if (nextZ == patLength)
+    if (i < pat_length) {
+      z[i] = next_z;
+    } else if (next_z == pat_length) {
       ans.push_back(i);
+    }
   }
   return ans;
 }
 
-int main(){
+int main() {
   std::string pattern, text;
   std::getline(std::cin, pattern);
   std::getline(std::cin, text);
-  std::vector<int> ans = std::move(z(pattern+"@"+text, pattern.length()));
-  for(auto v = ans.begin(); v != ans.end() ;++v){
-    std::cout << (*v) - pattern.length() - 1 << " ";
+  std::vector<int> ans = std::move(z(pattern + "@" + text, pattern.length()));
+  for (auto v : ans) {
+    std::cout << v - pattern.length() - 1 << " ";
   }
   return 0;
 }
