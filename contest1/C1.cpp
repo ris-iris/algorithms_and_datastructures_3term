@@ -24,8 +24,8 @@ class Trie {
       suf_link = nullptr;
       short_suf_link = nullptr;
       for (int i = 0; i < alph_size; ++i) {
-        children[i] = nullptr;
-        go[i] = nullptr;
+        children.push_back(nullptr);
+        go.push_back(nullptr);
       }
     }
     ~Node() {
