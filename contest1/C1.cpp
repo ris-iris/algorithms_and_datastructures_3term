@@ -2,31 +2,34 @@
 #include <vector>
 #include <queue>
 
-template<int ALPHABET, char FIRST_CHAR>
+
 class Trie {
+  int ALPHABET;
+  char FIRST_CHAR;
+
   struct Node {
-    Node *children[ALPHABET];
+    std::vector<Node*> children;
     char value;
     bool is_terminal;
     std::vector<int> str_id;
     Node *parent;
     Node *suf_link;
     Node *short_suf_link;
-    Node *go[ALPHABET];
+    std::vector<Node*> go;
 
-    Node(char v, bool b, Node *p) {
+    Node(char v, bool b, Node *p, int alph_size) {
       value = v;
       is_terminal = b;
       parent = p;
       suf_link = nullptr;
       short_suf_link = nullptr;
-      for (int i = 0; i < ALPHABET; ++i) {
+      for (int i = 0; i < alph_size; ++i) {
         children[i] = nullptr;
         go[i] = nullptr;
       }
     }
     ~Node() {
-      for (int i = 0; i < ALPHABET; ++i) {
+      for (int i = 0; i < children.size(); ++i) {
         if (children[i] != nullptr)
           delete children[i];
       }
@@ -34,19 +37,6 @@ class Trie {
   };
 
   Node *root_;
-
-  void AddString(const std::string &s, int num) {
-    Node *cur = root_;
-    for (int i = 0; i < s.length(); ++i) {
-      char curChar = s[i];
-      if (cur->children[curChar - FIRST_CHAR] == nullptr) {
-        cur->children[curChar - FIRST_CHAR] = new Node(curChar, false, cur);
-      }
-      cur = cur->children[curChar - FIRST_CHAR];
-    }
-    cur->is_terminal = true;
-    cur->str_id.push_back(num);
-  }
 
   Node *GetSufLink(Node *n) {
     if (n->suf_link == nullptr) {
@@ -87,8 +77,21 @@ class Trie {
   }
 
  public:
-  Trie(std::vector<std::string> patterns) {
-    root_ = new Node(0, false, nullptr);
+  void AddString(const std::string &s, int num) {
+    Node *cur = root_;
+    for (int i = 0; i < s.length(); ++i) {
+      char curChar = s[i];
+      if (cur->children[curChar - FIRST_CHAR] == nullptr) {
+        cur->children[curChar - FIRST_CHAR] = new Node(curChar, false, cur, ALPHABET);
+      }
+      cur = cur->children[curChar - FIRST_CHAR];
+    }
+    cur->is_terminal = true;
+    cur->str_id.push_back(num);
+  }
+
+  Trie(std::vector<std::string> patterns, int alphabet_size, char first_char): ALPHABET(alphabet_size), FIRST_CHAR(first_char){
+    root_ = new Node(0, false, nullptr, ALPHABET);
     for (int i = 0; i < patterns.size(); ++i) {
       AddString(patterns[i], i);
     }
@@ -98,61 +101,59 @@ class Trie {
     delete root_;
   }
 
-  template<int A, char F>
-  friend
-  class Iter;
+  class Iter {
+    Trie* temp_trie_;
+    Node *temp_node_;
+   public:
+    Iter(Iter const &iter) {
+      temp_trie_ = iter.temp_trie_;
+      temp_node_ = iter.temp_node_;
+    }
+
+    Iter(Trie* t) {
+      temp_trie_ = t;
+      temp_node_ = t->root_;
+    }
+
+    void Go(char c) {
+      temp_node_ = temp_trie_->GetGo(temp_node_, c);
+    }
+
+    bool IsTerminal() {
+      return temp_node_->is_terminal;
+    }
+
+    auto PatternsBegin() {
+      return temp_node_->str_id.begin();
+    }
+
+    auto PatternsEnd() {
+      return temp_node_->str_id.end();
+    }
+
+    void Next() {
+      temp_node_ = temp_trie_->GetShortSufLink(temp_node_);
+    }
+
+    bool IsFinal() {
+      return temp_node_ == temp_trie_->root_;
+    }
+
+    ~Iter() {}
+
+  };
+
+  Iter root(){
+    return Iter(this);
+  }
 };
 
-template<int ALPHABET, char FIRST_CHAR>
-class Iter {
-  Trie<ALPHABET, FIRST_CHAR>* temp_trie_;
-  typename Trie<ALPHABET, FIRST_CHAR>::Node *temp_node_;
- public:
-  Iter(Iter const &iter) {
-    temp_trie_ = iter.temp_trie_;
-    temp_node_ = iter.temp_node_;
-  }
-
-  Iter(Trie<ALPHABET, FIRST_CHAR>* t) {
-    temp_trie_ = t;
-    temp_node_ = t->root_;
-  }
-
-  void Go(char c) {
-    temp_node_ = temp_trie_->GetGo(temp_node_, c);
-  }
-
-  bool IsTerminal() {
-    return temp_node_->is_terminal;
-  }
-
-  auto PatternsBegin() {
-    return temp_node_->str_id.begin();
-  }
-
-  auto PatternsEnd() {
-    return temp_node_->str_id.end();
-  }
-
-  void Next() {
-    temp_node_ = temp_trie_->GetShortSufLink(temp_node_);
-  }
-
-  bool IsFinal() {
-    return temp_node_ == temp_trie_->root_;
-  }
-
-  ~Iter() {}
-
-};
-
-template<int ALPHABET, char FIRST_CHAR>
-void FindPatterns(Trie<ALPHABET, FIRST_CHAR> *trie,
-                  std::vector<int> &c,
+void FindPatterns(Trie* trie,
+                  std::vector<int> &count_of_entries,
                   const std::vector<int> &pattern_pos,
                   const std::string &text) {
-  Iter<ALPHABET, FIRST_CHAR> cur = Iter<ALPHABET, FIRST_CHAR>(trie);
-  Iter<ALPHABET, FIRST_CHAR> next_terminal = Iter<ALPHABET, FIRST_CHAR>(cur);
+  auto cur = trie->root();
+  auto next_terminal = cur;
   for (int i = 0; i < text.length(); ++i) {
     cur.Go(text[i]);
     next_terminal = cur;
@@ -161,7 +162,7 @@ void FindPatterns(Trie<ALPHABET, FIRST_CHAR> *trie,
         for (auto num = next_terminal.PatternsBegin(); num != next_terminal.PatternsEnd(); ++num) {
           int startInd = i - pattern_pos[*num];
           if (startInd > -1 && startInd + pattern_pos[pattern_pos.size() - 1] <= text.length()) {
-            ++c[startInd];
+            ++count_of_entries[startInd];
           }
         }
       }
@@ -170,7 +171,7 @@ void FindPatterns(Trie<ALPHABET, FIRST_CHAR> *trie,
   }
 }
 
-void Separate(std::string s, std::vector<std::string> &ans, std::vector<int> &ansPos) {
+void Separate(std::string s, std::vector<std::string> &pattern_str, std::vector<int> &patterns_pos) {
   s = "?" + s;
   int n = -1;
   for (int i = 0; i < s.length(); ++i) {
@@ -182,29 +183,25 @@ void Separate(std::string s, std::vector<std::string> &ans, std::vector<int> &an
       break;
 
     if (s[i - 1] == '?') {
-      ans.push_back("");
+      pattern_str.push_back("");
       ++n;
     }
-    ans[n] += s[i];
+    pattern_str[n] += s[i];
     if (i == s.length() - 1 || s[i + 1] == '?')
-      ansPos.push_back(i - 1);
+      patterns_pos.push_back(i - 1);
   }
-  ansPos.push_back(s.length() - 1);
+  patterns_pos.push_back(s.length() - 1);
 }
 
-int main(int argc, char *argv[]) {
-  std::string pat, text;
-  std::getline(std::cin, pat);
-  std::getline(std::cin, text);
-
+void Solve(std::string& pat, std::string& text){
   std::vector<std::string> patterns;
   std::vector<int> pattern_positions;
   Separate(pat, patterns, pattern_positions);
   int patterns_number = patterns.size();
 
-  Trie<26, 'a'> b(patterns);
-  std::vector<int> c(text.length(), 0);
-  FindPatterns(&b, c, pattern_positions, text);
+  Trie trie(patterns, 26, 'a');
+  std::vector<int> count_of_entries(text.length(), 0);
+  FindPatterns(&trie, count_of_entries, pattern_positions, text);
 
   if (patterns_number == 0) {
     for (int i = 0; i < text.length() - pat.size() + 1; ++i) {
@@ -212,9 +209,17 @@ int main(int argc, char *argv[]) {
     }
   } else {
     for (int i = 0; i < text.length(); ++i) {
-      if (c[i] == patterns_number) std::cout << i << " ";
+      if (count_of_entries[i] == patterns_number) std::cout << i << " ";
     }
   }
+}
+
+int main(int argc, char *argv[]) {
+  std::string pat, text;
+  std::getline(std::cin, pat);
+  std::getline(std::cin, text);
+
+  Solve(pat, text);
 
   return 0;
 }
