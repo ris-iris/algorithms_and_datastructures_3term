@@ -3,10 +3,10 @@
 
 #define ALPHABET 256
 
-class SuffArray{
+class SuffArray {
  public:
-  SuffArray(std::string& s1){
-    s = s1 + (char)(0);
+  SuffArray(std::string &s1) {
+    s = s1 + (char) (0);
     length_ = s.length();
     suf_arr_ = std::vector<int>(length_, 0);
     classes_ = std::vector<int>(length_, 0);
@@ -17,7 +17,7 @@ class SuffArray{
     CountLCP();
   }
 
- friend int getAns(SuffArray& sa);
+  friend int getAns(SuffArray &sa);
 
  private:
   std::string s;
@@ -27,7 +27,6 @@ class SuffArray{
   std::vector<int> cnt_;
   std::vector<int> lcp_;
   int tmpClass = 0;
-
 
   void Init() {
     for (int i = 0; i < length_; ++i) {
@@ -49,7 +48,7 @@ class SuffArray{
     }
   }
 
-  void countSort(std::vector<int> &helpSufArr){
+  void countSort(std::vector<int> &helpSufArr) {
     for (int i = 0; i < length_; ++i) {
       ++cnt_[classes_[helpSufArr[i]]];
     }
@@ -62,21 +61,21 @@ class SuffArray{
     }
   }
 
-  std::vector<int> GetNewClasses(std::vector<int> &helpSufArr, int pow){
+  std::vector<int> GetNewClasses(std::vector<int> &helpSufArr, int pow) {
     std::vector<int> helpClasses(length_, 0);
     countSort(helpSufArr);
     tmpClass = 0;
     for (int i = 1; i < length_; ++i) {
       int secHalf1 = (suf_arr_[i] + (1u << pow)) % length_;
       int secHalf2 = (suf_arr_[i - 1] + (1u << pow)) % length_;
-      if(classes_[suf_arr_[i]] != classes_[suf_arr_[i - 1]] || classes_[secHalf1] != classes_[secHalf2])
+      if (classes_[suf_arr_[i]] != classes_[suf_arr_[i - 1]] || classes_[secHalf1] != classes_[secHalf2])
         ++tmpClass;
       helpClasses[suf_arr_[i]] = tmpClass;
     }
     return helpClasses;
   }
 
-  void count(){
+  void count() {
     std::vector<int> helpSufArr(length_, 0);
 
     for (uint64_t pow = 0; (1u << pow) < length_; ++pow) {
@@ -89,17 +88,17 @@ class SuffArray{
     }
   }
 
-  void CountLCP(){ //Kasai
+  void CountLCP() { //Kasai
     std::vector<int> pos(length_);
     for (int i = 0; i < length_; ++i) {
       pos[suf_arr_[i]] = i;
     }
     int k = 0;
     for (int i = 0; i < length_; ++i) {
-      if(k > 0) {
+      if (k > 0) {
         --k;
       }
-      if(pos[i] == length_ - 1){
+      if (pos[i] == length_ - 1) {
         lcp_[pos[i]] = -1;
         k = 0;
       } else {
@@ -111,10 +110,9 @@ class SuffArray{
     }
   }
 
-
 };
 
-int getAns(SuffArray& sa){
+int getAns(SuffArray &sa) {
   int ans = 0;
   int n = sa.length_;
   ans = n * (n - 1) / 2;
@@ -123,7 +121,6 @@ int getAns(SuffArray& sa){
   }
   return ans;
 }
-
 
 int main() {
   std::string text;
