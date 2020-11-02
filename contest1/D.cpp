@@ -17,16 +17,7 @@ class SuffArray{
     CountLCP();
   }
 
-  int getAns(){
-    int ans = 0;
-    for (int i = 0; i < length_; ++i) {
-      ans += length_ - 1 - suf_arr_[i];
-    }
-    for (int i = 0; i < length_ - 1; ++i) {
-      ans -= lcp_[i];
-    }
-    return ans;
-  }
+ friend int getAns(SuffArray& sa);
 
  private:
   std::string s;
@@ -36,6 +27,7 @@ class SuffArray{
   std::vector<int> cnt_;
   std::vector<int> lcp_;
   int tmpClass = 0;
+
 
   void Init() {
     for (int i = 0; i < length_; ++i) {
@@ -57,39 +49,43 @@ class SuffArray{
     }
   }
 
+  void countSort(std::vector<int> &helpSufArr){
+    for (int i = 0; i < length_; ++i) {
+      ++cnt_[classes_[helpSufArr[i]]];
+    }
+    for (int i = 1; i < tmpClass + 1; ++i) {
+      cnt_[i] += cnt_[i - 1];
+    }
+    for (int i = length_ - 1; i > -1; --i) {
+      --cnt_[classes_[helpSufArr[i]]];
+      suf_arr_[cnt_[classes_[helpSufArr[i]]]] = helpSufArr[i];
+    }
+  }
+
+  std::vector<int> GetNewClasses(std::vector<int> &helpSufArr, int pow){
+    std::vector<int> helpClasses(length_, 0);
+    countSort(helpSufArr);
+    tmpClass = 0;
+    for (int i = 1; i < length_; ++i) {
+      int secHalf1 = (suf_arr_[i] + (1u << pow)) % length_;
+      int secHalf2 = (suf_arr_[i - 1] + (1u << pow)) % length_;
+      if(classes_[suf_arr_[i]] != classes_[suf_arr_[i - 1]] || classes_[secHalf1] != classes_[secHalf2])
+        ++tmpClass;
+      helpClasses[suf_arr_[i]] = tmpClass;
+    }
+    return helpClasses;
+  }
+
   void count(){
     std::vector<int> helpSufArr(length_, 0);
-    std::vector<int> helpClasses(length_, 0);
 
     for (uint64_t pow = 0; (1u << pow) < length_; ++pow) {
       cnt_.assign(tmpClass + 1, 0);
-      int mv = (1u << pow);
       for (int i = 0; i < length_; ++i) { // made sorted by second part
         helpSufArr[i] = suf_arr_[i] - (1u << pow);
         if (helpSufArr[i] < 0) helpSufArr[i] += length_;
       }
-      //counting to sort the first part
-      for (int i = 0; i < length_; ++i) {
-        ++cnt_[classes_[helpSufArr[i]]];
-      }
-      for (int i = 1; i < tmpClass + 1; ++i) {
-        cnt_[i] += cnt_[i - 1];
-      }
-      for (int i = length_ - 1; i > -1; --i) {
-        --cnt_[classes_[helpSufArr[i]]];
-        suf_arr_[cnt_[classes_[helpSufArr[i]]]] = helpSufArr[i];
-      }
-      helpClasses.assign(length_, 0);
-      helpClasses[suf_arr_[0]] = 0;
-      tmpClass = 0;
-      for (int i = 1; i < length_; ++i) {
-        int secHalf1 = (suf_arr_[i] + (1u << pow)) % length_;
-        int secHalf2 = (suf_arr_[i - 1] + (1u << pow)) % length_;
-        if(classes_[suf_arr_[i]] != classes_[suf_arr_[i - 1]] || classes_[secHalf1] != classes_[secHalf2])
-          ++tmpClass;
-        helpClasses[suf_arr_[i]] = tmpClass;
-      }
-      classes_ = helpClasses;
+      classes_ = GetNewClasses(helpSufArr, pow);
     }
   }
 
@@ -118,10 +114,21 @@ class SuffArray{
 
 };
 
+int getAns(SuffArray& sa){
+  int ans = 0;
+  int n = sa.length_;
+  ans = n * (n - 1) / 2;
+  for (int i = 0; i < sa.length_ - 1; ++i) {
+    ans -= sa.lcp_[i];
+  }
+  return ans;
+}
+
+
 int main() {
   std::string text;
   getline(std::cin, text);
   SuffArray sa(text);
-  std::cout << sa.getAns();
+  std::cout << getAns(sa);
   return 0;
 }
