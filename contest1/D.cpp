@@ -26,19 +26,15 @@ class SuffArray {
   std::vector<int> classes_;
   std::vector<int> cnt_;
   std::vector<int> lcp_;
-  int tmpClass = 0;
+  int tmpClass = ALPHABET;
 
   void Init() {
-    for (int i = 0; i < length_; ++i) {
-      ++cnt_[s[i]];
+    std::vector<int> helpSufArr(length_, 0);
+    for (int i = 0; i < length_; ++i){
+      classes_[i] = s[i];
+      helpSufArr[i] = i;
     }
-    for (int i = 1; i < ALPHABET; ++i) {
-      cnt_[i] += cnt_[i - 1];
-    }
-    for (int i = 0; i < length_; ++i) {
-      --cnt_[s[i]];
-      suf_arr_[cnt_[s[i]]] = i;
-    }
+    countSort(helpSufArr);
 
     for (int i = 1; i < length_; ++i) {
       if (s[suf_arr_[i]] != s[suf_arr_[i - 1]]) {
