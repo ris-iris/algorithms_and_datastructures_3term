@@ -5,13 +5,12 @@
 
 class SuffArray {
  public:
-  SuffArray(std::string &s1) {
-    s = s1 + (char) (0);
-    length_ = s.length();
-    suf_arr_ = std::vector<int>(length_, 0);
-    classes_ = std::vector<int>(length_, 0);
-    cnt_ = std::vector<int>(ALPHABET, 0);
-    lcp_ = std::vector<int>(length_, 0);
+  SuffArray(std::string &s1) : s(s1 + (char) (0)),
+                               length_(s.length()),
+                               suf_arr_(std::vector<int>(length_, 0)),
+                               classes_(std::vector<int>(length_, 0)),
+                               cnt_( std::vector<int>(ALPHABET, 0)),
+                               lcp_(std::vector<int>(length_, 0)){
     Init();
     count();
     CountLCP();
@@ -30,7 +29,7 @@ class SuffArray {
 
   void Init() {
     std::vector<int> helpSufArr(length_, 0);
-    for (int i = 0; i < length_; ++i){
+    for (int i = 0; i < length_; ++i) {
       classes_[i] = s[i];
       helpSufArr[i] = i;
     }
