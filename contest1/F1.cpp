@@ -12,8 +12,8 @@ class SuffArray {
                                length_(s.length()),
                                suf_arr_(std::vector<int>(length_, 0)),
                                classes_(std::vector<int>(length_, 0)),
-                               cnt_( std::vector<int>(ALPHABET, 0)),
-                               lcp_(std::vector<int>(length_, 0)){
+                               cnt_(std::vector<int>(ALPHABET, 0)),
+                               lcp_(std::vector<int>(length_, 0)) {
     Init();
     count();
     CountLCP();
@@ -146,7 +146,6 @@ std::string GetKStatistic(std::string &s, std::string &t, int64_t k) {
   }
   return "-1";
 }
-
 
 int main() {
   std::string s, t;
