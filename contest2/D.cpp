@@ -22,6 +22,12 @@ bool operator!=(const Point &a, const Point &b) {
   return !(a == b);
 }
 
+std::istream& operator>> (std::istream& is, Point& p)
+{
+  is >> p.x >> p.y;
+  return is;
+}
+
 struct Vector {
   double x, y;
 
@@ -102,12 +108,12 @@ int main(int argc, char *argv[]) {
   Point p;
   std::cin >> n;
   for (int i = 0; i < n; ++i) {
-    std::cin >> p.x >> p.y;
+    std::cin >> p;
     polygon1.push_back(p);
   }
   std::cin >> n;
   for (int i = 0; i < n; ++i) {
-    std::cin >> p.x >> p.y;
+    std::cin >> p;
     polygon2.push_back(p);
   }
   std::cout
