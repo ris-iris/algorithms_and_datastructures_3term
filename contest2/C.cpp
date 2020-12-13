@@ -14,27 +14,14 @@ enum state {
   NEXT_SECOND_BRIDGE = 5
 };
 
-struct Point {
-  int id;
+enum hullMode {
+  UPPER = false,
+  LOWER = true
+};
+
+
+struct Point{
   double x, y, z;
-  Point *prev;
-  Point *next;
-
-  Point() = default;
-  Point(int _id, double _x, double _y, double _z, Point *p, Point *n)
-      : id(_id), x(_x), y(_y), z(_z), prev(p), next(n) {}
-
-  bool GetLinksValid() {
-    if (prev->next == this) {
-      prev->next = next;
-      next->prev = prev;
-      return false;
-    } else {
-      prev->next = this;
-      next->prev = this;
-      return true;
-    }
-  }
 
   void rotate(double angle) {
     double new_z = z * cos(angle) + y * sin(angle);
@@ -52,26 +39,67 @@ struct Point {
     x = new_x;
     y = new_y;
   }
-
 };
 
-bool IsRightTurn(const Point *a, const Point *b, const Point *c) {
+bool operator < (Point a, Point b){
+  return a.x < b.x || a.x == b.x && a.z < b.z;
+}
+
+std::istream& operator>> (std::istream& is, Point& p)
+{
+  is >> p.x >> p.y >> p.z;
+  return is;
+}
+
+double CrossProduct(Point a, Point b, Point c, char mode){
+  if(mode == 'y'){
+    return (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+  }
+  if (mode == 'z') {
+    return ((b.x - a.x) * (c.z - b.z) - (b.z - a.z) * (c.x - b.x));
+  }
+}
+
+struct Node {
+  int id;
+  Point point;
+  Node *prev;
+  Node *next;
+
+  Node() = default;
+  Node(int _id, Point p, Node *pr, Node *n)
+      : id(_id), point(p), prev(pr), next(n) {}
+
+  bool GetLinksValid() {
+    if (prev->next == this) {
+      prev->next = next;
+      next->prev = prev;
+      return false;
+    } else {
+      prev->next = this;
+      next->prev = this;
+      return true;
+    }
+  }
+};
+
+bool IsRightTurn(const Node *a, const Node *b, const Node *c) {
   if (a == nullptr || b == nullptr || c == nullptr) {
     return false;
   }
-  return (b->x - a->x) * (c->y - b->y) - (b->y - a->y) * (c->x - b->x) <= 0;
+  return CrossProduct(a->point, b->point, c->point, 'y') <= 0;
 }
 
-double TurnTime(Point *a, Point *b, Point *c) {
+double TurnTime(Node *a, Node *b, Node *c) {
   if (a == nullptr || b == nullptr || c == nullptr) {
     return INFTY;
   }
-  double help = (b->x - a->x) * (c->y - b->y) - (b->y - a->y) * (c->x - b->x);
-  return help == 0 ? INFTY : ((b->x - a->x) * (c->z - b->z) - (b->z - a->z) * (c->x - b->x)) / help;
+  double help = CrossProduct(a->point, b->point, c->point, 'y');
+  return help == 0 ? INFTY : CrossProduct(a->point, b->point, c->point, 'z') / help;
 }
 
-std::pair<Point *, Point *> FindBridge(Point *first, Point *second) {
-  std::pair<Point *, Point *> bridge(first, second);
+std::pair<Node *, Node *> FindBridge(Node *first, Node *second) {
+  std::pair<Node *, Node *> bridge(first, second);
   while (true) {
     if (IsRightTurn(bridge.first, bridge.second, bridge.second->next)) {
       bridge.second = bridge.second->next;
@@ -84,17 +112,17 @@ std::pair<Point *, Point *> FindBridge(Point *first, Point *second) {
   return bridge;
 }
 
-void FixLinks(std::pair<Point *, Point *> &bridge, std::vector<Point *> &res, double divider_x) {
+void FixLinks(std::pair<Node *, Node *> &bridge, std::vector<Node *> &res, double divider_x) {
   bridge.first->next = bridge.second;
   bridge.second->prev = bridge.first;
   for (int i = res.size() - 1; i > -1; --i) {
-    Point *current = res[i];
-    if (current->x > bridge.first->x && current->x < bridge.second->x) {
+    Node *current = res[i];
+    if (current->point.x > bridge.first->point.x && current->point.x < bridge.second->point.x) {
       bridge.first->next = current;
       bridge.second->prev = current;
       current->prev = bridge.first;
       current->next = bridge.second;
-      if (current->x <= divider_x) {
+      if (current->point.x <= divider_x) {
         bridge.first = current;
       } else {
         bridge.second = current;
@@ -111,12 +139,12 @@ void FixLinks(std::pair<Point *, Point *> &bridge, std::vector<Point *> &res, do
   }
 }
 
-std::vector<Point *> MergeHulls(const std::vector<Point *> &first,
-                                const std::vector<Point *> &second,
-                                Point *first_bridge,
-                                Point *second_bridge) {
-  std::vector<Point *> res;
-  std::pair<Point *, Point *> bridge = move(FindBridge(first_bridge, second_bridge));
+std::vector<Node *> MergeHulls(const std::vector<Node *> &first,
+                               const std::vector<Node *> &second,
+                               Node *first_bridge,
+                               Node *second_bridge) {
+  std::vector<Node *> res;
+  std::pair<Node *, Node *> bridge = move(FindBridge(first_bridge, second_bridge));
 
   int iter1 = 0, iter2 = 0;
   double current_time = -INFTY;
@@ -160,13 +188,13 @@ std::vector<Point *> MergeHulls(const std::vector<Point *> &first,
     current_time = min_time;
     switch (min_state) {
       case FIRST_PART:
-        if (first[iter1]->x < bridge.first->x)
+        if (first[iter1]->point.x < bridge.first->point.x)
           res.push_back(first[iter1]);
         first[iter1]->GetLinksValid();
         ++iter1;
         break;
       case SECOND_PART:
-        if (second[iter2]->x > bridge.second->x)
+        if (second[iter2]->point.x > bridge.second->point.x)
           res.push_back(second[iter2]);
         second[iter2]->GetLinksValid();
         ++iter2;
@@ -185,16 +213,16 @@ std::vector<Point *> MergeHulls(const std::vector<Point *> &first,
         break;
     }
   }
-  FixLinks(bridge, res, first_bridge->x);
+  FixLinks(bridge, res, first_bridge->point.x);
   return res;
 }
 
-std::vector<Point *> BuildHull(std::vector<Point *> &points, int left, int right) {
-  if (right - left == 1) return std::vector<Point *>({points[left]});
+std::vector<Node *> BuildHull(std::vector<Node *> &points, int left, int right) {
+  if (right - left == 1) return std::vector<Node *>({points[left]});
   int m = (left + right) / 2;
-  std::vector<Point *> help1 = move(BuildHull(points, left, m));
-  std::vector<Point *> help2 = move(BuildHull(points, m, right));
-  std::vector<Point *> res = move(MergeHulls(help1, help2, points[m - 1], points[m]));
+  std::vector<Node *> help1 = move(BuildHull(points, left, m));
+  std::vector<Node *> help2 = move(BuildHull(points, m, right));
+  std::vector<Node *> res = move(MergeHulls(help1, help2, points[m - 1], points[m]));
   return res;
 }
 
@@ -217,48 +245,36 @@ struct Face {
   }
 };
 
-void AddLowerHull(std::vector<Point *> &points, std::vector<Face> &result) {
-  for (Point *p : points) {
+std::ostream & operator<< (std::ostream & os, Face& f)
+{
+  os << f.first_vertex << " " << f.second_vertex << " " << f.third_vertex << "\n";
+  return os;
+}
+
+
+void AddHullPart(std::vector<Node *> &points, std::vector<Face> &result, bool mode) {
+  for (Node *p : points) {
     p->next = nullptr;
     p->prev = nullptr;
-    p->z *= -1;
+    p->point.z *= -1;
   }
-  std::sort(points.begin(), points.end(), [](Point *a, Point *b) {
-    return a->x < b->x || a->x == b->x && a->z < b->z;
+  std::sort(points.begin(), points.end(), [](Node *a, Node *b) {
+    return a->point < b->point;
   });
-  std::vector<Point *> point_seq = move(BuildHull(points, 0, points.size()));
-  for (Point *p : point_seq) {
+  std::vector<Node *> point_seq = BuildHull(points, 0, points.size());
+  for (Node *p : point_seq) {
     Face current(p->prev->id, p->id, p->next->id);
-    if (!p->GetLinksValid()) {
+    if (mode ^ p->GetLinksValid()) {
       std::swap(current.first_vertex, current.second_vertex);
     }
     result.push_back(current);
   }
 }
 
-void AddUpperHull(std::vector<Point *> &points, std::vector<Face> &result) {
-  for (Point *p : points) {
-    p->next = nullptr;
-    p->prev = nullptr;
-    p->z *= -1;
-  }
-  std::sort(points.begin(), points.end(), [](Point *a, Point *b) {
-    return a->x < b->x || a->x == b->x && a->z < b->z;
-  });
-  std::vector<Point *> point_seq = BuildHull(points, 0, points.size());
-  for (Point *p : point_seq) {
-    Face current(p->prev->id, p->id, p->next->id);
-    if (p->GetLinksValid()) {
-      std::swap(current.first_vertex, current.second_vertex);
-    }
-    result.push_back(current);
-  }
-}
-
-std::vector<Face> GetFaces(std::vector<Point *> points) {
+std::vector<Face> GetFaces(std::vector<Node *> points) {
   std::vector<Face> result;
-  AddUpperHull(points, result);
-  AddLowerHull(points, result);
+  AddHullPart(points, result, UPPER);
+  AddHullPart(points, result, LOWER);
 
   return result;
 }
@@ -268,14 +284,14 @@ int main() {
   std::cin >> n;
   for (int i = 0; i < n; i++) {
     int m;
-    std::vector<Point *> points;
+    std::vector<Node *> points;
 
     std::cin >> m;
     for (int j = 0; j < m; j++) {
-      int x, y, z;
-      std::cin >> x >> y >> z;
-      Point *p = new Point(j, x, y, z, nullptr, nullptr);
-      p->rotate(0.05);
+      Point point;
+      std::cin >> point;
+      point.rotate(0.05);
+      Node *p = new Node(j, point, nullptr, nullptr);
       points.push_back(p);
     }
 
@@ -290,7 +306,7 @@ int main() {
     });
     std::cout << hull.size() << "\n";
     for (Face &f : hull) {
-      std::cout << 3 << " " << f.first_vertex << " " << f.second_vertex << " " << f.third_vertex << "\n";
+      std::cout << 3 << " " << f;
     }
   }
   return 0;
