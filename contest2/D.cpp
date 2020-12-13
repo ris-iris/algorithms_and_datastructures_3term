@@ -22,8 +22,7 @@ bool operator!=(const Point &a, const Point &b) {
   return !(a == b);
 }
 
-std::istream& operator>> (std::istream& is, Point& p)
-{
+std::istream &operator>>(std::istream &is, Point &p) {
   is >> p.x >> p.y;
   return is;
 }
