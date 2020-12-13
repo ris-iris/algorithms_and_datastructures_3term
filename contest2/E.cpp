@@ -14,6 +14,10 @@ struct Point {
   Point(int _x, int _y) : x(_x), y(_y) {}
   Point() = default;
 };
+std::istream &operator>>(std::istream &is, Point &p) {
+  is >> p.x >> p.y;
+  return is;
+}
 
 struct Vector {
   int x, y;
@@ -41,12 +45,10 @@ struct Segment {
 
   Segment() = default;
 
-  Segment(int _id, int x1, int y1, int x2, int y2) : id(_id) {
-    start = Point(x1, y1);
-    end = Point(x2, y2);
-    if (x1 > x2) {
+  Segment(int _id, Point p1, Point p2) : id(_id), start(p1), end(p2) {
+    if (p1.x > p2.x) {
       std::swap(start, end);
-    } else if (x1 == x2 && y1 > y2) {
+    } else if (p1.x == p2.x && p1.y > p2.y) {
       std::swap(start, end);
     }
   }
@@ -154,11 +156,11 @@ int main() {
   int n;
   std::vector<Segment> segments;
   Segment s;
-  int start_x, start_y, end_x, end_y;
+  Point p1, p2;
   std::cin >> n;
   for (int i = 0; i < n; ++i) {
-    std::cin >> start_x >> start_y >> end_x >> end_y;
-    s = Segment(i, start_x, start_y, end_x, end_y);
+    std::cin >> p1 >> p2;
+    s = Segment(i, p1, p2);
     segments.push_back(s);
   }
   std::pair<int, int> cross_id = GetCrossingSegments(segments);
