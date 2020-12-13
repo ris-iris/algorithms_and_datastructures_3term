@@ -19,8 +19,7 @@ enum hullMode {
   LOWER = true
 };
 
-
-struct Point{
+struct Point {
   double x, y, z;
 
   void rotate(double angle) {
@@ -41,18 +40,17 @@ struct Point{
   }
 };
 
-bool operator < (Point a, Point b){
+bool operator<(Point a, Point b) {
   return a.x < b.x || a.x == b.x && a.z < b.z;
 }
 
-std::istream& operator>> (std::istream& is, Point& p)
-{
+std::istream &operator>>(std::istream &is, Point &p) {
   is >> p.x >> p.y >> p.z;
   return is;
 }
 
-double CrossProduct(Point a, Point b, Point c, char mode){
-  if(mode == 'y'){
+double CrossProduct(Point a, Point b, Point c, char mode) {
+  if (mode == 'y') {
     return (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
   }
   if (mode == 'z') {
@@ -245,12 +243,10 @@ struct Face {
   }
 };
 
-std::ostream & operator<< (std::ostream & os, Face& f)
-{
+std::ostream &operator<<(std::ostream &os, Face &f) {
   os << f.first_vertex << " " << f.second_vertex << " " << f.third_vertex << "\n";
   return os;
 }
-
 
 void AddHullPart(std::vector<Node *> &points, std::vector<Face> &result, bool mode) {
   for (Node *p : points) {
